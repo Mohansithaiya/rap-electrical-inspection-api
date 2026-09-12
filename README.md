@@ -20,7 +20,7 @@ call the endpoints directly.
 
 - Source: Roboflow project **"Station" v2** (workspace `ppe-detection-7kco8`,
   slug `station-raaga-ogkgf`), License **CC BY 4.0**.
-- 9,718 source images exported in COCO format (2025-09-23 export).
+- 9,718 images in the exported v2 COCO dataset, including augmentation-generated images (2025-09-23 export).
 - Root COCO category `helmet-insulator` (id 0) is the project's unannotated
   supercategory and is intentionally excluded from training.
 - **8 trained classes**: `arc`, `disconnector`, `disconnector_open`,
