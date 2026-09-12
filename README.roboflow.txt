@@ -18,7 +18,7 @@ visit https://github.com/roboflow/notebooks
 To find over 100k other datasets and pre-trained models, visit https://universe.roboflow.com
 
 The dataset includes 9718 images.
-Helmet-insulator are annotated in COCO format.
+The `helmet-insulator` category is present in the COCO metadata but contains no usable annotations, so it was excluded from training.
 
 The following pre-processing was applied to each image:
 * Auto-orientation of pixel data (with EXIF-orientation stripping)
