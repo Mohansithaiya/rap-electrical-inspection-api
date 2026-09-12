@@ -243,7 +243,14 @@ agentic framework, per the assignment's constraint.
   detections between 0.5 and `AMBIGUITY_BAND_HIGH=0.6` are still reported but
   hedged in phrasing rather than stated flatly.
 - **Risk classes**: `HIGH_RISK_CLASSES={arc, spark}`,
-  `MEDIUM_RISK_CLASSES={disconnector_open}`.
+  `MEDIUM_RISK_CLASSES={disconnector_open}`. The resulting `RISK_ASSESSMENT`
+  output (`UNSAFE`/`CAUTION`/`NO_IMMEDIATE_HAZARD`) is a model-derived
+  inspection-priority heuristic, not certified electrical-safety advice.
+- `/ask` receives a question plus an already-computed `DetectionResult`
+  (typically the output of a prior `/detect` call) — it does not accept an
+  image and does not itself invoke the detector. Detection (Part A) and
+  reasoning (Part B) are deliberately decoupled so Part B stays testable and
+  defensible independently of the vision model.
 - When detections don't support a confident answer, the API explicitly
   returns `answer_state: "INSUFFICIENT_INFO"` rather than guessing — this is
   distinct from `"ANSWERED"` and is always accompanied by a specific reason

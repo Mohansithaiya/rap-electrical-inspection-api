@@ -170,7 +170,7 @@ yaml_path = os.path.join(
 with open(yaml_path, "w", encoding="utf-8") as f:
 
     f.write(
-        f"""path: {os.path.abspath(OUTPUT_ROOT)}
+        f"""path: {OUTPUT_ROOT}
 train: images/train
 val: images/valid
 test: images/test
