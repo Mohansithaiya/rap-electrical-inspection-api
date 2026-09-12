@@ -1,0 +1,15 @@
+train/
+valid/
+test/
+yolo_dataset/
+yolo_dataset.zip
+runs/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.venv/
+venv/
+*.zip
+yolo11n.pt
+yolo26n.pt

@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Constrained Object Detection &amp; Reasoning API</title>
+<style>
+  :root {
+    --bg: #0f1620;
+    --panel: #161f2c;
+    --panel-2: #1c2735;
+    --border: #2b3a4d;
+    --text: #e7edf3;
+    --text-dim: #97a7b9;
+    --accent: #3aa0ff;
+    --accent-dim: #1d3a52;
+    --amber: #e0a326;
+    --amber-bg: #3a2f14;
+    --red: #e05252;
+    --red-bg: #3a1a1a;
+    --green: #3fc27a;
+    --green-bg: #123b28;
+    --mono: "Consolas", "SFMono-Regular", Menlo, monospace;
+    --sans: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  header {
+    background: linear-gradient(180deg, #10192480, transparent), var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 1.1rem 1.5rem;
+  }
+
+  .header-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    border-radius: 7px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+  }
+
+  .brand-mark svg { width: 20px; height: 20px; }
+
+  .brand-text h1 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.2px;
+  }
+
+  .brand-text p {
+    margin: 0.15rem 0 0 0;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 3rem;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+
+  .panel + .panel { margin-top: 1.25rem; }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.9rem;
+  }
+
+  .panel-title .step {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 0.68rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  /* ---------- Upload / dropzone ---------- */
+
+  #dropzone {
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 2.2rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    color: var(--text-dim);
+  }
+
+  #dropzone:hover, #dropzone.drag-over {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--text);
+  }
+
+  #dropzone svg { width: 30px; height: 30px; margin-bottom: 0.6rem; opacity: 0.8; }
+  #dropzone .dz-title { font-size: 0.92rem; font-weight: 600; color: var(--text); }
+  #dropzone .dz-sub { font-size: 0.78rem; margin-top: 0.25rem; }
+  #fileInput { display: none; }
+
+  /* ---------- Preview / canvas ---------- */
+
+  #previewArea { display: none; }
+  #previewArea.visible { display: block; }
+
+  #canvasWrap {
+    position: relative;
+    width: 100%;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #000;
+  }
+
+  #canvas { display: block; width: 100%; height: auto; }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.85rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .file-meta {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--text-dim);
+  }
+
+  /* ---------- Buttons ---------- */
+
+  button {
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  }
+
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  button.primary { background: var(--accent); border-color: var(--accent); color: #06131f; }
+  button.primary:hover:not(:disabled) { background: #55b0ff; }
+
+  button.ghost { background: transparent; }
+
+  .btn-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+  /* ---------- Summary bar ---------- */
+
+  #summaryBar {
+    display: none;
+    margin-top: 1rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: 6px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  #summaryBar.visible { display: flex; }
+
+  #summaryBar .count { color: var(--accent); font-weight: 700; }
+
+  /* ---------- Detection cards ---------- */
+
+  #detectionsGrid {
+    margin-top: 0.9rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.55rem;
+  }
+
+  .det-card {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    background: var(--panel-2);
+    border-radius: 6px;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .det-card.risk-high { border-left-color: var(--red); }
+  .det-card.risk-medium { border-left-color: var(--amber); }
+
+  .det-card .cls-name {
+    font-weight: 600;
+    font-size: 0.86rem;
+    text-transform: capitalize;
+  }
+
+  .det-card .conf-row {
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .conf-bar-track {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: #0a1119;
+    overflow: hidden;
+  }
+
+  .conf-bar-fill { height: 100%; background: var(--accent); }
+  .risk-high .conf-bar-fill { background: var(--red); }
+  .risk-medium .conf-bar-fill { background: var(--amber); }
+
+  .conf-val { font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+
+  .empty-note {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-style: italic;
+    margin-top: 0.9rem;
+  }
+
+  /* ---------- Ask section ---------- */
+
+  #askInputRow {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  #questionInput {
+    flex: 1;
+    font-family: inherit;
+    font-size: 0.88rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+  }
+
+  #questionInput:focus { outline: none; border-color: var(--accent); }
+  #questionInput:disabled { opacity: 0.5; }
+
+  .example-questions {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .example-chip {
+    font-size: 0.74rem;
+    font-weight: 500;
+    padding: 0.32rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  .example-chip:hover { border-color: var(--accent); color: var(--text); }
+
+  /* ---------- Ask result ---------- */
+
+  #askResult { margin-top: 1rem; display: none; }
+  #askResult.visible { display: block; }
+
+  .answer-card {
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+  }
+
+  .answer-card.state-answered { border-color: var(--green); background: var(--green-bg); }
+  .answer-card.state-insufficient { border-color: var(--amber); background: var(--amber-bg); }
+
+  .answer-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+  }
+
+  .badge.intent { background: var(--accent-dim); color: var(--accent); }
+  .badge.state-answered-badge { background: #0d3320; color: var(--green); }
+  .badge.state-insufficient-badge { background: #3a2f14; color: var(--amber); }
+
+  .answer-text { font-size: 0.92rem; }
+
+  .risk-banner {
+    margin-top: 0.7rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .risk-banner.unsafe { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+  .risk-banner.caution { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber); }
+  .risk-banner.clear { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+
+  /* ---------- States: loading / error ---------- */
+
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: 0.75rem;
+  }
+
+  .error-box {
+    margin-top: 0.75rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: 6px;
+    background: var(--red-bg);
+    border: 1px solid var(--red);
+    color: #ffb3b3;
+    font-size: 0.84rem;
+    display: none;
+  }
+
+  .error-box.visible { display: block; }
+
+  footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.74rem;
+    padding: 1.5rem 1rem 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+    </div>
+    <div class="brand-text">
+      <h1>Constrained Object Detection &amp; Reasoning API</h1>
+      <p>Electrical Equipment Inspection &middot; RT-DETR + Deterministic Reasoning</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Left column: detect -->
+  <div>
+    <div class="panel">
+      <div class="panel-title"><span class="step">1</span> Upload &amp; Detect</div>
+
+      <div id="dropzone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <div class="dz-title">Drag &amp; drop an inspection image</div>
+        <div class="dz-sub">or click to browse &mdash; JPG / PNG</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+
+      <div id="previewArea">
+        <div id="canvasWrap"><canvas id="canvas"></canvas></div>
+        <div class="toolbar">
+          <span class="file-meta" id="fileMeta"></span>
+          <div class="btn-row">
+            <button class="ghost" id="resetBtn" type="button">New image</button>
+            <button class="primary" id="detectBtn" type="button">Run Detection</button>
+          </div>
+        </div>
+        <div class="status-line" id="detectStatus" style="display:none;"></div>
+        <div class="error-box" id="detectError"></div>
+
+        <div id="summaryBar">
+          <span>Objects detected: <span class="count" id="summaryCount">0</span></span>
+          <span id="summaryBreakdown" style="color: var(--text-dim);"></span>
+        </div>
+        <div id="detectionsGrid"></div>
+        <div class="empty-note" id="emptyNote" style="display:none;">No detections above the confidence threshold.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: ask -->
+  <div>
+    <div class="panel">
+      <div class="panel-title"><span class="step">2</span> Ask About This Image</div>
+
+      <div id="askInputRow">
+        <input type="text" id="questionInput" placeholder="e.g. Is it safe to inspect this equipment?" disabled>
+        <button class="primary" id="askBtn" type="button" disabled>Ask</button>
+      </div>
+
+      <div class="example-questions" id="exampleQuestions">
+        <span class="example-chip" data-q="How many switches are in this image?">How many switches?</span>
+        <span class="example-chip" data-q="Is there an insulator present?">Insulator present?</span>
+        <span class="example-chip" data-q="Where is the transformer located?">Where is the transformer?</span>
+        <span class="example-chip" data-q="Is it safe to inspect this equipment?">Is it safe?</span>
+        <span class="example-chip" data-q="List all objects in this image">List all objects</span>
+        <span class="example-chip" data-q="Is there a person in this image?">Is there a person?</span>
+      </div>
+
+      <div class="status-line" id="askStatus" style="display:none;"></div>
+      <div class="error-box" id="askError"></div>
+
+      <div id="askResult">
+        <div class="answer-card" id="answerCard">
+          <div class="answer-badge-row">
+            <span class="badge intent" id="intentBadge"></span>
+            <span class="badge" id="stateBadge"></span>
+          </div>
+          <div class="answer-text" id="answerText"></div>
+          <div class="risk-banner" id="riskBanner" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>Run inference locally &middot; detections and reasoning happen entirely through <code>/detect</code> and <code>/ask</code></footer>
+
+<script>
+(function () {
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("fileInput");
+  const previewArea = document.getElementById("previewArea");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const fileMeta = document.getElementById("fileMeta");
+  const detectBtn = document.getElementById("detectBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const detectStatus = document.getElementById("detectStatus");
+  const detectError = document.getElementById("detectError");
+  const summaryBar = document.getElementById("summaryBar");
+  const summaryCount = document.getElementById("summaryCount");
+  const summaryBreakdown = document.getElementById("summaryBreakdown");
+  const detectionsGrid = document.getElementById("detectionsGrid");
+  const emptyNote = document.getElementById("emptyNote");
+
+  const questionInput = document.getElementById("questionInput");
+  const askBtn = document.getElementById("askBtn");
+  const askStatus = document.getElementById("askStatus");
+  const askError = document.getElementById("askError");
+  const askResult = document.getElementById("askResult");
+  const answerCard = document.getElementById("answerCard");
+  const intentBadge = document.getElementById("intentBadge");
+  const stateBadge = document.getElementById("stateBadge");
+  const answerText = document.getElementById("answerText");
+  const riskBanner = document.getElementById("riskBanner");
+
+  // Mirrors the risk taxonomy documented in part_b/schema.py — used only to
+  // color detection cards/boxes here; the API's own reasoning is untouched.
+  const HIGH_RISK = new Set(["arc", "spark"]);
+  const MEDIUM_RISK = new Set(["disconnector_open"]);
+  const BOX_COLORS = { high: "#e05252", medium: "#e0a326", normal: "#3aa0ff" };
+
+  let currentFile = null;
+  let lastDetections = [];
+  let lastImageId = "";
+  let lastImageWidth = 0;
+  let lastImageHeight = 0;
+
+  function riskLevel(cls) {
+    if (HIGH_RISK.has(cls)) return "high";
+    if (MEDIUM_RISK.has(cls)) return "medium";
+    return "normal";
+  }
+
+  function setStatus(el, text) {
+    if (!text) { el.style.display = "none"; el.innerHTML = ""; return; }
+    el.style.display = "flex";
+    el.innerHTML = '<span class="spinner"></span><span>' + text + "</span>";
+  }
+
+  function setError(el, text) {
+    if (!text) { el.classList.remove("visible"); el.textContent = ""; return; }
+    el.textContent = text;
+    el.classList.add("visible");
+  }
+
+  function resetAll() {
+    currentFile = null;
+    lastDetections = [];
+    lastImageId = "";
+    lastImageWidth = 0;
+    lastImageHeight = 0;
+    fileInput.value = "";
+    previewArea.classList.remove("visible");
+    summaryBar.classList.remove("visible");
+    detectionsGrid.innerHTML = "";
+    emptyNote.style.display = "none";
+    setError(detectError, "");
+    setStatus(detectStatus, "");
+    questionInput.value = "";
+    questionInput.disabled = true;
+    askBtn.disabled = true;
+    askResult.classList.remove("visible");
+    setError(askError, "");
+    setStatus(askStatus, "");
+  }
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith("image/")) {
+      setError(detectError, "That file doesn't look like an image. Choose a JPG or PNG.");
+      return;
+    }
+    currentFile = file;
+    setError(detectError, "");
+    lastDetections = [];
+    summaryBar.classList.remove("visible");
+    detectionsGrid.innerHTML = "";
+    emptyNote.style.display = "none";
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(objectUrl);
+      previewArea.classList.add("visible");
+      fileMeta.textContent = file.name + "  ·  " + img.width + "×" + img.height;
+    };
+    img.onerror = () => {
+      // The browser couldn't decode this as an image client-side. Still let
+      // the user submit it — /detect is the source of truth for validity,
+      // and this is exactly the path that should surface its 400 response.
+      URL.revokeObjectURL(objectUrl);
+      canvas.width = 400;
+      canvas.height = 200;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#1c2735";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#97a7b9";
+      ctx.font = "14px Segoe UI, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Preview unavailable — file may not be a valid image.", canvas.width / 2, canvas.height / 2 - 8);
+      ctx.fillText("Run Detection to check with the server.", canvas.width / 2, canvas.height / 2 + 14);
+      ctx.textAlign = "left";
+      previewArea.classList.add("visible");
+      fileMeta.textContent = file.name + "  ·  preview unavailable";
+    };
+    img.src = objectUrl;
+  }
+
+  dropzone.addEventListener("click", () => fileInput.click());
+  dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+  dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag-over"));
+  dropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropzone.classList.remove("drag-over");
+    if (e.dataTransfer.files.length) loadFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files.length) loadFile(fileInput.files[0]);
+  });
+  resetBtn.addEventListener("click", resetAll);
+
+  function drawBoxes() {
+    const img = new Image();
+    // Redraw from the original file so re-running detection doesn't compound boxes.
+    const objectUrl = URL.createObjectURL(currentFile);
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      URL.revokeObjectURL(objectUrl);
+      ctx.lineWidth = Math.max(2, canvas.width / 300);
+      ctx.font = Math.max(14, canvas.width / 55) + "px Segoe UI, sans-serif";
+      lastDetections.forEach((det) => {
+        const [x1, y1, x2, y2] = det.bbox;
+        const color = BOX_COLORS[riskLevel(det.cls || det["class"])];
+        ctx.strokeStyle = color;
+        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+        const label = (det["class"]) + " " + det.confidence.toFixed(2);
+        const textW = ctx.measureText(label).width + 8;
+        const textH = parseInt(ctx.font, 10) + 6;
+        ctx.fillStyle = color;
+        ctx.fillRect(x1, Math.max(y1 - textH, 0), textW, textH);
+        ctx.fillStyle = "#06131f";
+        ctx.fillText(label, x1 + 4, Math.max(y1 - textH, 0) + textH - 6);
+      });
+    };
+    img.src = objectUrl;
+  }
+
+  function renderDetections() {
+    detectionsGrid.innerHTML = "";
+    if (!lastDetections.length) {
+      summaryBar.classList.remove("visible");
+      emptyNote.style.display = "block";
+      return;
+    }
+    emptyNote.style.display = "none";
+    summaryBar.classList.add("visible");
+    summaryCount.textContent = lastDetections.length;
+
+    const counts = {};
+    lastDetections.forEach((d) => { counts[d["class"]] = (counts[d["class"]] || 0) + 1; });
+    summaryBreakdown.textContent = Object.keys(counts).sort()
+      .map((c) => c + " ×" + counts[c]).join("  ·  ");
+
+    lastDetections.forEach((det) => {
+      const level = riskLevel(det["class"]);
+      const card = document.createElement("div");
+      card.className = "det-card" + (level === "high" ? " risk-high" : level === "medium" ? " risk-medium" : "");
+      const pct = Math.round(det.confidence * 100);
+      card.innerHTML =
+        '<div class="cls-name">' + det["class"].replace(/_/g, " ") + "</div>" +
+        '<div class="conf-row">' +
+          '<div class="conf-bar-track"><div class="conf-bar-fill" style="width:' + pct + '%;"></div></div>' +
+          '<span class="conf-val">' + pct + "%</span>" +
+        "</div>";
+      detectionsGrid.appendChild(card);
+    });
+  }
+
+  detectBtn.addEventListener("click", async () => {
+    if (!currentFile) return;
+    detectBtn.disabled = true;
+    setError(detectError, "");
+    setStatus(detectStatus, "Running RT-DETR inference…");
+
+    const formData = new FormData();
+    formData.append("file", currentFile);
+
+    try {
+      const resp = await fetch("/detect", { method: "POST", body: formData });
+      const body = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        const detail = (body && body.detail) ? body.detail : ("Request failed with status " + resp.status);
+        setError(detectError, detail);
+        setStatus(detectStatus, "");
+        detectBtn.disabled = false;
+        return;
+      }
+      lastDetections = body.detections || [];
+      lastImageId = body.image_id;
+      lastImageWidth = body.image_width;
+      lastImageHeight = body.image_height;
+
+      drawBoxes();
+      renderDetections();
+      questionInput.disabled = false;
+      askBtn.disabled = false;
+    } catch (err) {
+      setError(detectError, "Could not reach the detection API. Is the server running?");
+    } finally {
+      setStatus(detectStatus, "");
+      detectBtn.disabled = false;
+    }
+  });
+
+  function renderRiskBanner(text) {
+    riskBanner.style.display = "none";
+    riskBanner.className = "risk-banner";
+    if (text.startsWith("Unsafe / immediate hazard")) {
+      riskBanner.textContent = "⚠ UNSAFE — immediate hazard present";
+      riskBanner.classList.add("unsafe");
+      riskBanner.style.display = "flex";
+    } else if (text.startsWith("Caution")) {
+      riskBanner.textContent = "⚠ CAUTION — inspect before proceeding";
+      riskBanner.classList.add("caution");
+      riskBanner.style.display = "flex";
+    } else if (text.startsWith("No immediate hazard")) {
+      riskBanner.textContent = "✓ No immediate hazard detected";
+      riskBanner.classList.add("clear");
+      riskBanner.style.display = "flex";
+    }
+  }
+
+  async function runAsk(question) {
+    if (!question) return;
+    askBtn.disabled = true;
+    setError(askError, "");
+    setStatus(askStatus, "Reasoning over detections…");
+    askResult.classList.remove("visible");
+
+    const payload = {
+      question: question,
+      detections: {
+        image_id: lastImageId,
+        image_width: lastImageWidth,
+        image_height: lastImageHeight,
+        detections: lastDetections,
+      },
+    };
+
+    try {
+      const resp = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        const detail = (data && data.detail) ? data.detail : ("Request failed with status " + resp.status);
+        setError(askError, detail);
+        return;
+      }
+
+      intentBadge.textContent = data.intent;
+      const answered = data.answer_state === "ANSWERED";
+      stateBadge.textContent = data.answer_state;
+      stateBadge.className = "badge " + (answered ? "state-answered-badge" : "state-insufficient-badge");
+      answerCard.className = "answer-card " + (answered ? "state-answered" : "state-insufficient");
+      answerText.textContent = data.answer;
+
+      if (data.intent === "RISK_ASSESSMENT" && answered) {
+        renderRiskBanner(data.answer);
+      } else {
+        riskBanner.style.display = "none";
+      }
+
+      askResult.classList.add("visible");
+    } catch (err) {
+      setError(askError, "Could not reach the reasoning API. Is the server running?");
+    } finally {
+      setStatus(askStatus, "");
+      askBtn.disabled = false;
+    }
+  }
+
+  askBtn.addEventListener("click", () => runAsk(questionInput.value.trim()));
+  questionInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runAsk(questionInput.value.trim());
+  });
+
+  document.querySelectorAll(".example-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      if (questionInput.disabled) return;
+      questionInput.value = chip.getAttribute("data-q");
+      runAsk(questionInput.value);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
