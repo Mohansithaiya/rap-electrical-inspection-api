@@ -10,6 +10,7 @@ insufficient-info rather than guessing).
 import logging
 import os
 import sys
+from pathlib import Path
 
 _PART_B_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "part_b")
 if _PART_B_DIR not in sys.path:
@@ -112,4 +113,5 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
-app.mount("/", StaticFiles(directory="app/static", html=True), name="static")
+_STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/", StaticFiles(directory=str(_STATIC_DIR), html=True), name="static")

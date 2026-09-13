@@ -111,7 +111,12 @@ flowchart TD
 - Validation scripts (run against the raw export before trusting a
   conversion):
   - `integrity.py` — cross-checks images on disk vs. COCO references,
-    MD5-based duplicate/cross-split-leak detection.
+    MD5-based duplicate/cross-split-leak detection. This detects
+    byte-identical duplicates (including byte-identical copies across
+    splits), but not visually similar or augmented near-duplicates — since
+    the exported dataset contains augmentation-generated images, leakage
+    from an augmented variant of a source image landing in a different
+    split cannot be fully ruled out by this check alone.
   - `audit.py` — per-class annotation counts per split, flags invalid boxes.
   - `dataset_stats.py` — image dimension histograms, bbox size stats,
     unannotated-image counts.
@@ -285,9 +290,16 @@ docker build -t rap-electrical-inspection-api .
 docker run -p 8000:8000 rap-electrical-inspection-api
 ```
 
-**Note**: this Dockerfile has been reviewed but not built or run in this
-development environment (no local Docker installation was available) — it
-has not been locally verified end-to-end.
+**Note**: this Dockerfile has not been built or run in this development
+environment, because Docker is unavailable here — it has not been locally
+verified end-to-end and is **not claimed to be tested**. In particular, the
+project uses non-headless `opencv-python` (a transitive `ultralytics`
+dependency, imported at module load time), and on `python:3.12-slim` this
+requires system libraries such as `libgl1` and `libglib2.0-0`. Without them,
+the image may still build and `/health` may still respond, but the first
+`/detect` request can fail once `cv2`/model loading actually occurs. The
+Dockerfile installs these libraries, but that fix itself has not been
+verified by an actual local build.
 
 ## Model weights
 

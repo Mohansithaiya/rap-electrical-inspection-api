@@ -2,6 +2,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# System libraries required by non-headless opencv-python (a transitive
+# ultralytics dependency, imported at module load time) — python:3.12-slim
+# does not include these by default.
+RUN apt-get update && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 # Install the already-pinned torch/torchvision as CPU-only wheels first —
 # PyPI's default wheels bundle CUDA runtime deps, which are unnecessary
