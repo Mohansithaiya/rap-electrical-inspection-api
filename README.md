@@ -124,7 +124,8 @@ flowchart TD
   run was interrupted by a GPU usage-limit disconnect at epoch 28/50).
 - Training environment: **NVIDIA T4**, Python **3.12.13**, PyTorch
   **2.10.0+cu128**, Ultralytics **8.4.146**.
-- Exact training wall-clock time was not recorded.
+- Training wall-clock time: **4.164 hours** for 30 epochs on a single NVIDIA
+  T4 (per the completed-Kaggle-run output recorded in the notebook below).
 - The actual training/evaluation run is preserved in
   [`notebooks/RAP_RTDETR_Electrical_Inspection.ipynb`](notebooks/RAP_RTDETR_Electrical_Inspection.ipynb),
   and can be reproduced (given the dataset and a GPU) with
@@ -228,7 +229,7 @@ curl -X POST http://localhost:8000/ask \
   "question": "How many switches are in this image?",
   "intent": "COUNT",
   "answer_state": "ANSWERED",
-  "answer": "There are 3 switches detected in this image."
+  "answer": "3 instance(s) of 'switch' detected."
 }
 ```
 
